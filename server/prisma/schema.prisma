@@ -1,0 +1,142 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "./__generated__"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum ActivityLevel {
+  SEDENTARY
+  LIGHTLY_ACTIVE
+  MODERATELY_ACTIVE
+  VERY_ACTIVE
+  EXTRA_ACTIVE
+}
+
+enum PrimaryGoal {
+  WEIGHT_LOSS
+  MUSCLE_GAIN
+  MAINTENANCE
+  IMPROVED_HEALTH
+  ATHLETIC_PERFORMANCE
+}
+
+enum EmotionalState {
+  STRESS
+  BOREDOM
+  HAPPINESS
+  SADNESS
+  NEUTRAL
+}
+
+enum EatingContext {
+  HOME
+  WORK
+  SOCIAL
+  RESTAURANT
+}
+
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  firstName    String?
+  lastName     String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Profile Fields
+  age           Int?
+  weight        Float? // in kg
+  height        Float? // in cm
+  gender        Gender?
+  activityLevel ActivityLevel?
+  primaryGoal   PrimaryGoal?
+
+  // Dietary & Recommendations
+  dietaryRestrictions String? // User's dietary restrictions or allergies
+  recommendedCalories Int? // AI-calculated daily calorie recommendation
+
+  // Relations
+  foodLogs              FoodLog[]
+  aiAnalyses            AiAnalysis[]
+  nutritionApiResponses NutritionApiResponse[]
+}
+
+model FoodLog {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  foodName    String
+  calories    Float
+  servingSize Float // g
+
+  // Macros & Micros
+  protein            Float // g
+  fatTotal           Float // g
+  fatSaturated       Float // g
+  carbohydratesTotal Float // g
+  fiber              Float // g
+  sugar              Float // g
+  sodium             Float // mg
+  potassium          Float // mg
+  cholesterol        Float // mg
+
+  // Behavioral Context
+  emotionalState EmotionalState
+  eatingContext  EatingContext
+
+  // Meal Grouping (links items logged together)
+  mealGroupId String? // UUID to group items from the same meal
+
+  loggedAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([mealGroupId])
+}
+
+model AiAnalysis {
+  id     String @id @default(uuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
+
+  startDate DateTime
+  endDate   DateTime
+
+  summary         String @db.Text
+  triggerPatterns Json // Stores identified patterns (e.g., "Stress leads to sugar intake")
+  recommendations Json // Stores list of actionable advice
+  riskLevel       String // e.g., "Low", "Medium", "High"
+
+  generatedAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+model NutritionApiResponse {
+  id     String  @id @default(uuid())
+  userId String? // Optional for anonymous caching
+  user   User?   @relation(fields: [userId], references: [id])
+
+  query       String
+  rawResponse Json // Store the full API response
+  itemCount   Int // Number of items returned
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([query, createdAt])
+}

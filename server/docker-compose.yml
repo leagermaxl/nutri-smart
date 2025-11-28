@@ -1,0 +1,16 @@
+services:
+    postgres:
+        image: postgres:15-alpine
+        container_name: nutrition_db
+        ports:
+            - '5433:5432'
+        environment:
+            - POSTGRES_USER=root
+            - POSTGRES_PASSWORD=123456
+            - POSTGRES_DB=nutrition
+        volumes:
+            - postgres_data:/var/lib/postgresql/data
+        restart: always
+
+volumes:
+    postgres_data:
